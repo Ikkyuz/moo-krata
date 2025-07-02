@@ -1,0 +1,78 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model Category {
+  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  name        String  @unique
+  menus       Menu[]
+}
+
+model Menu {
+  id          String      @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  description String?
+  picture     String?
+  category    Category    @relation(fields: [categoryId], references: [id])    
+  categoryId  String      @db.ObjectId
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  orderItems  OrderItem[]
+}
+
+model Table {
+  id          String      @id @default(auto()) @map("_id") @db.ObjectId
+  tableNumber String      @unique
+  status      String      // เช่น "available", "occupied", "reserved", "cleaning"
+  capacity    Int
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  queue       Queue[]
+  orders      Order[]
+}
+
+model Queue {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  queueNumber Int      @unique
+  customerName String?
+  status      String   // เช่น "waiting", "called", "seated", "cancelled"
+  tableId     String?  @db.ObjectId
+  table       Table?   @relation(fields: [tableId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model OrderItem {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  menuId    String   @db.ObjectId
+  menu      Menu     @relation(fields: [menuId], references: [id])
+  quantity  Int
+  orderId   String   @db.ObjectId
+  order     Order    @relation(fields: [orderId], references: [id])
+}
+
+model Order {
+  id          String      @id @default(auto()) @map("_id") @db.ObjectId
+  tableId     String      @db.ObjectId
+  table       Table       @relation(fields: [tableId], references: [id])
+  customerName String?     // สำหรับกรณีที่ลูกค้าไม่ได้ระบุโต๊ะแต่สั่งผ่าน QR
+  status      String      // เช่น "pending", "preparing", "completed", "cancelled"
+  orderItems  OrderItem[]
+  orderedAt   DateTime    @default(now())
+  completedAt DateTime?
+}
+
+model User {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  username  String   @unique
+  password  String
+  role      String   // เช่น "admin", "staff"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
